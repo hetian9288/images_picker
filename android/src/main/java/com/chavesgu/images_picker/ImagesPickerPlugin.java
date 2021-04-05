@@ -309,7 +309,11 @@ public class ImagesPickerPlugin implements FlutterPlugin, MethodCallHandler, Act
 
   private void saveImageToGallery(final String path, String albumName) {
     boolean status = false;
-    String suffix = path.substring(path.lastIndexOf('.'));
+    String suffix = "jpg";
+    int index = path.lastIndexOf('.');
+    if (index > -1) {
+      suffix = path.substring(index + 1);
+    }
     Bitmap bitmap = BitmapFactory.decodeFile(path);
     status = FileSaver.saveImage(context, bitmap, suffix, albumName);
     _result.success(status);
