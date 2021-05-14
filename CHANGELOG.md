@@ -1,3 +1,16 @@
+## 1.2.4
+fix
+## 1.2.3
+fix
+## 1.2.2
+delete some superfluous action
+## 1.2.1
+update important readme
+## 1.2.0
+fix android save bug
+## 1.1.0
+add language prop to set language
+
 ## 1.0.0
 merge to null-safety
 fix ios PickType.all bug

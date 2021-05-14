@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 class ImagesPicker {
-  static const MethodChannel _channel = const MethodChannel('chavesgu/images_picker');
+  static const MethodChannel _channel =
+      const MethodChannel('chavesgu/images_picker');
 
   static Future<List<Media>?> pick({
     int count = 1,
@@ -12,6 +13,7 @@ class ImagesPicker {
     CropOption? cropOpt,
     int? maxSize,
     double? quality,
+    Language language = Language.System,
   }) async {
     assert(count > 0, 'count must > 0');
     if (quality != null) {
@@ -36,20 +38,21 @@ class ImagesPicker {
                 "aspectRatioY": cropOpt.aspectRatio?.aspectRatioY,
               }
             : null,
+        "language": language.toString(),
       });
       if (res != null) {
         List<Media> output = res.map((image) {
-          Media media = Media();
-          media.thumbPath = image["thumbPath"];
-          media.path = image["path"];
-          if (image["size"] != null) media.size = (image["size"] / 1024).toDouble();
+          Media media = Media(
+            path: image["path"],
+            size: ((image["size"] ?? 0) / 1024).toDouble(),
+            thumbPath: image["thumbPath"],
+          );
           return media;
         }).toList();
         return output;
       }
       return null;
     } catch (e) {
-//      print(e);
       return null;
     }
   }
@@ -60,6 +63,7 @@ class ImagesPicker {
     CropOption? cropOpt,
     int? maxSize,
     double? quality,
+    Language language = Language.System,
   }) async {
     if (quality != null) {
       assert(quality > 0, 'quality must > 0');
@@ -82,20 +86,21 @@ class ImagesPicker {
                 "aspectRatioY": cropOpt.aspectRatio?.aspectRatioY,
               }
             : null,
+        "language": language.toString(),
       });
       if (res != null) {
         List<Media> output = res.map((image) {
-          Media media = Media();
-          media.thumbPath = image["thumbPath"];
-          media.path = image["path"];
-          if (image["size"] != null) media.size = (image["size"] / 1024).toDouble();
+          Media media = Media(
+            path: image["path"],
+            size: ((image["size"] ?? 0) / 1024).toDouble(),
+            thumbPath: image["thumbPath"],
+          );
           return media;
         }).toList();
         return output;
       }
       return null;
     } catch (e) {
-//      print(e);
       return null;
     }
   }
@@ -136,6 +141,18 @@ enum CropType {
   circle,
 }
 
+enum Language {
+  System,
+  Chinese,
+  ChineseTraditional,
+  English,
+  Japanese,
+  French,
+  Korean,
+  German,
+  Vietnamese,
+}
+
 class CropAspectRatio {
   final int aspectRatioX;
   final int aspectRatioY;
@@ -170,14 +187,14 @@ class Media {
 
   ///视频路径或图片路径
   ///Video path or image path
-  String? path;
+  String path;
 
   /// 文件大小
-  double? size;
+  double size;
 
   Media({
-    this.path,
+    required this.path,
     this.thumbPath,
-    this.size,
+    required this.size,
   });
 }

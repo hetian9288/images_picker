@@ -1,5 +1,7 @@
 # images_picker
 
+[![images-picker](https://img.shields.io/badge/pub-1.2.3-orange)](https://pub.dev/packages/images_picker)
+
 Flutter plugin for selecting images/videos from the Android and iOS image library, and taking pictures/videos with the camera,save image/video to album/gallery
 
 ios(10+): [ZLPhotoBrowser](https://github.com/longitachi/ZLPhotoBrowser)
@@ -12,9 +14,9 @@ android(21+): [PictureSelector](https://github.com/LuckSiege/PictureSelector)
 - crop images with custom aspectRatio
 - compress images with quality/maxSize
 - save image/video to album/gallery
-- localizations currently support english,chinese,japanese(more for android)
-> Don't need to set localizations,the plugin will follow system
-
+- localizations currently support
+  - System, Chinese, ChineseTraditional, English, Japanese, French, Korean, German, Vietnamese,
+    
 ### Install
 For ios:
 ```
@@ -103,6 +105,13 @@ ImagesPicker.pick(
   maxSize: 500, // only for ios (kb)
 );
 ```
+- set language
+```dart
+ImagesPicker.pick(
+  language: Language.English,
+// you can set Language.System for following phone language
+)
+```
 - save file to album
 ```dart
 ImagesPicker.saveImageToAlbum(file, albumName: "");
@@ -144,6 +153,14 @@ int maxTime = 15,
 CropOption cropOpt,
 int maxSize,
 double quality,
+```
+### proguard-rules
+```
+-keep class com.luck.picture.lib.** { *; }
+
+-dontwarn com.yalantis.ucrop**
+-keep class com.yalantis.ucrop** { *; }
+-keep interface com.yalantis.ucrop** { *; }
 ```
 
 # License

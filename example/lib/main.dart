@@ -38,9 +38,11 @@ class _MyAppState extends State<MyApp> {
                 List<Media>? res = await ImagesPicker.pick(
                   count: 3,
                   pickType: PickType.all,
+                  language: Language.System,
+                  // maxSize: 500,
                   cropOpt: CropOption(
-                      // aspectRatio: CropAspectRatio.wh16x9
-                      ),
+                    aspectRatio: CropAspectRatio.wh16x9,
+                  ),
                 );
                 if (res != null) {
                   print(res.map((e) => e.path).toList());
@@ -56,7 +58,12 @@ class _MyAppState extends State<MyApp> {
               child: Text('openCamera'),
               onPressed: () async {
                 List<Media>? res = await ImagesPicker.openCamera(
-                  pickType: PickType.all,
+                  pickType: PickType.image,
+                  quality: 0.5,
+                  // cropOpt: CropOption(
+                  //   aspectRatio: CropAspectRatio.wh16x9,
+                  // ),
+                  // maxTime: 60,
                 );
                 if (res != null) {
                   print(res[0].path);
@@ -68,16 +75,20 @@ class _MyAppState extends State<MyApp> {
             ),
             ElevatedButton(
               onPressed: () async {
-                File file = await downloadFile('https://cdn.chavesgu.com/logo.png');
-                bool res = await ImagesPicker.saveImageToAlbum(file, albumName: "chaves");
+                File file =
+                    await downloadFile('https://cdn.chavesgu.com/logo.png');
+                bool res = await ImagesPicker.saveImageToAlbum(file,
+                    albumName: "chaves");
                 print(res);
               },
               child: Text('saveNetworkImageToAlbum'),
             ),
             ElevatedButton(
               onPressed: () async {
-                File file = await downloadFile('https://cdn.chavesgu.com/SampleVideo.mp4');
-                bool res = await ImagesPicker.saveVideoToAlbum(file, albumName: "chaves");
+                File file = await downloadFile(
+                    'https://cdn.chavesgu.com/SampleVideo.mp4');
+                bool res = await ImagesPicker.saveVideoToAlbum(file,
+                    albumName: "chaves");
                 print(res);
               },
               child: Text('saveNetworkVideoToAlbum'),
@@ -100,7 +111,8 @@ class _MyAppState extends State<MyApp> {
   Future<File> downloadFile(String url) async {
     Dio simple = Dio();
     String savePath = Directory.systemTemp.path + '/' + url.split('/').last;
-    await simple.download(url, savePath, options: Options(responseType: ResponseType.bytes));
+    await simple.download(url, savePath,
+        options: Options(responseType: ResponseType.bytes));
     print(savePath);
     File file = new File(savePath);
     return file;

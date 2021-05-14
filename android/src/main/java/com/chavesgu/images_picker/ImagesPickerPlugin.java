@@ -38,6 +38,7 @@ import androidx.annotation.NonNull;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
@@ -53,6 +54,7 @@ import com.luck.picture.lib.PictureSelector;
 import com.luck.picture.lib.config.PictureConfig;
 import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
+import com.luck.picture.lib.language.LanguageConfig;
 import com.luck.picture.lib.listener.OnResultCallbackListener;
 import com.luck.picture.lib.tools.PictureFileUtils;
 import com.yalantis.ucrop.util.FileUtils;
@@ -133,6 +135,7 @@ public class ImagesPickerPlugin implements FlutterPlugin, MethodCallHandler, Act
         double quality = call.argument("quality");
         boolean supportGif = call.argument("gif");
         HashMap<String, Object> cropOption = call.argument("cropOption");
+        String language = call.argument("language");
 
         int chooseType;
         switch (pickType) {
@@ -148,6 +151,7 @@ public class ImagesPickerPlugin implements FlutterPlugin, MethodCallHandler, Act
         }
         PictureSelectionModel model = PictureSelector.create(activity)
                 .openGallery(chooseType);
+        Utils.setLanguage(model, language);
         Utils.setPhotoSelectOpt(model, count, quality);
         if (cropOption!=null) Utils.setCropOpt(model, cropOption);
         model.isGif(supportGif);
@@ -159,10 +163,23 @@ public class ImagesPickerPlugin implements FlutterPlugin, MethodCallHandler, Act
         int maxTime = call.argument("maxTime");
         double quality = call.argument("quality");
         HashMap<String, Object> cropOption = call.argument("cropOption");
+        String language = call.argument("language");
+
+        int chooseType;
+        switch (pickType) {
+          case "PickType.image":
+            chooseType = PictureMimeType.ofImage();
+            break;
+          default:
+            chooseType = PictureMimeType.ofVideo();
+            break;
+        }
+
         PictureSelectionModel model = PictureSelector.create(activity)
-                .openCamera(pickType.equals("PickType.video") ? PictureMimeType.ofVideo() : PictureMimeType.ofImage());
+                .openCamera(chooseType);
         model.setOutputCameraPath(context.getExternalCacheDir().getAbsolutePath());
         model.recordVideoSecond(maxTime);
+        Utils.setLanguage(model, language);
         Utils.setPhotoSelectOpt(model, 1, quality);
         if (cropOption!=null) Utils.setCropOpt(model, cropOption);
         resolveMedias(model);
@@ -212,43 +229,53 @@ public class ImagesPickerPlugin implements FlutterPlugin, MethodCallHandler, Act
   private void resolveMedias(PictureSelectionModel model) {
     model.forResult(new OnResultCallbackListener<LocalMedia>() {
       @Override
-      public void onResult(List<LocalMedia> medias) {
+      public void onResult(final List<LocalMedia> medias) {
         // 结果回调
-        List<Object> resArr = new ArrayList<Object>();
-        for (LocalMedia media:medias) {
-          Log.i("media mimeType", media.getMimeType());
-          HashMap<String, Object> map = new HashMap<String, Object>();
-          String path = media.getPath();
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            path = media.getAndroidQToPath();
+        new Thread() {
+          @Override
+          public void run() {
+            final List<Object> resArr = new ArrayList<Object>();
+            for (LocalMedia media:medias) {
+              HashMap<String, Object> map = new HashMap<String, Object>();
+              String path = media.getPath();
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                path = media.getAndroidQToPath();
+              }
+              if (media.isCut()) path = media.getCutPath();
+              if (media.isCompressed()) path = media.getCompressPath();
+//              path = copyToTmp(path);
+              map.put("path", path);
+
+              String thumbPath;
+              if (media.getMimeType().contains("image")) {
+                thumbPath = path;
+              } else {
+                thumbPath = createVideoThumb(path);
+              }
+              map.put("thumbPath", thumbPath);
+
+              int size = getFileSize(path);
+              map.put("size", size);
+
+              resArr.add(map);
+            }
+
+//            PictureFileUtils.deleteCacheDirFile(context, type);
+//            PictureFileUtils.deleteAllCacheDirFile(context);
+
+            new Handler(context.getMainLooper()).post(new Runnable() {
+              @Override
+              public void run() {
+                _result.success(resArr);
+              }
+            });
           }
-          if (media.isCut()) path = media.getCutPath();
-          if (media.isCompressed()) path = media.getCompressPath();
-          path = copyToTmp(path);
-          map.put("path", path);
-
-          String thumbPath;
-          if (media.getMimeType().contains("image")) {
-            thumbPath = path;
-          } else {
-            thumbPath = createVideoThumb(path);
-          }
-          map.put("thumbPath", thumbPath);
-
-          int size = getFileSize(path);
-          map.put("size", size);
-
-          resArr.add(map);
-        }
-
-//          PictureFileUtils.deleteCacheDirFile(context, type);
-        PictureFileUtils.deleteAllCacheDirFile(context);
-
-        _result.success(resArr);
+        }.start();
       }
       @Override
       public void onCancel() {
         // 取消
+        _result.success(null);
       }
     });
   }
@@ -267,7 +294,7 @@ public class ImagesPickerPlugin implements FlutterPlugin, MethodCallHandler, Act
     } catch (IOException e) {
       e.printStackTrace();
     }
-    return "";
+    return null;
   }
 
   private int getFileSize(String path) {
@@ -309,11 +336,15 @@ public class ImagesPickerPlugin implements FlutterPlugin, MethodCallHandler, Act
 
   private void saveImageToGallery(final String path, String albumName) {
     boolean status = false;
+<<<<<<< HEAD
     String suffix = "jpg";
     int index = path.lastIndexOf('.');
     if (index > -1) {
       suffix = path.substring(index + 1);
     }
+=======
+    String suffix = path.substring(path.lastIndexOf('.')+1);
+>>>>>>> d40cc4fdb0a7ffe77fa56840c45553a1580d6651
     Bitmap bitmap = BitmapFactory.decodeFile(path);
     status = FileSaver.saveImage(context, bitmap, suffix, albumName);
     _result.success(status);
@@ -325,7 +356,7 @@ public class ImagesPickerPlugin implements FlutterPlugin, MethodCallHandler, Act
 
   private boolean hasPermission() {
     return Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-            (activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PERMISSION_GRANTED && activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PERMISSION_GRANTED);
+            (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PERMISSION_GRANTED && ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PERMISSION_GRANTED);
   }
 
     @Override
